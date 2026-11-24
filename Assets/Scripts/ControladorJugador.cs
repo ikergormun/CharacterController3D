@@ -15,10 +15,21 @@ public class ControladorJugador : MonoBehaviour
     [SerializeField] private float velocidad = 5f;
     [SerializeField] private float alturaSalto = 1.5f;
     [SerializeField] private float gravedad = -20f;
+    [SerializeField] private float sensibilidadMouse = 0.12f;
+
+    [Header("Cámara")]
+    [SerializeField] private Vector3 posicionTercera = new Vector3(0.65f, 0.15f, -3f);
+    [SerializeField] private Vector3 posicionApuntar = new Vector3(0.55f, 0.1f, -1.7f);
+    [SerializeField] private float suavizado = 10f;
+
+
+
 
     private float velocidadVertical;
 
     private float inclinacion = 0f;
+
+    private bool primeraPersona = false;
 
     //Componentes que vamos a manipular
     private CharacterController controlador;
@@ -52,6 +63,12 @@ public class ControladorJugador : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (cambiarVista.WasPressedThisFrame())
+        {
+            primeraPersona = !primeraPersona;
+            modelo.SetActive(!primeraPersona);
+        }
+
         GirarCamara();
         MoverPersonaje();
         ActualizarCamara();
@@ -63,10 +80,10 @@ public class ControladorJugador : MonoBehaviour
         Vector2 deltaMouse = mirar.ReadValue<Vector2>();
 
         //2. Rotamos le gameobject (jugador) en el eje Y
-        transform.Rotate(Vector3.up * deltaMouse.x);
+        transform.Rotate(Vector3.up * deltaMouse.x * sensibilidadMouse);
 
         //3. Obtenemos la inclinación de la cámara según el desplazamiento del ratón en Y
-        inclinacion -= deltaMouse.y;
+        inclinacion -= deltaMouse.y * sensibilidadMouse;
 
         //4. Limitamos el ángulo de inclinación
         inclinacion = Mathf.Clamp(inclinacion, -80f, 80f);
@@ -106,6 +123,25 @@ public class ControladorJugador : MonoBehaviour
 
     void ActualizarCamara()
     {
-        //TODO
+        //1. Destino de la cámara
+        Vector3 destino = Vector3.zero; ;
+
+        //Cambia según FPS O TPS
+        if (!primeraPersona)
+        {
+            //Posición en tercera definida
+            destino = posicionTercera;
+        }
+
+        //Interpolamos entre donde está ahora y donde estará
+        camara.transform.localPosition = Vector3.Lerp(camara.transform.localPosition, destino, suavizado * Time.deltaTime);
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if(hit.gameObject.tag == "Cubo")
+        {
+            Destroy(hit.gameObject);
+        }
     }
 }
